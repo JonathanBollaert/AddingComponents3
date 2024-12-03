@@ -1,0 +1,84 @@
+﻿@using PeopleManager.Dto.Requests
+@using PeopleManager.Dto.Results
+@using PeopleManager.Sdk
+@using Vives.Services.Model
+
+@attribute [Route(AppRoutes.People.Create)]
+
+@inject PersonSdk PersonSdk
+@inject OrganizationSdk OrganizationSdk
+
+@inject NavigationManager NavigationManager
+
+<h3>Create</h3>
+
+@if (Model is not null)
+{
+    <EditForm Model="Model" OnValidSubmit="CreatePerson">
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+        <ValidationSummary></ValidationSummary>
+
+        <div class="mb-3">
+            <label for="FirstName" class="form-label">First name</label>
+            <InputText id="FirstName" @bind-value="Model.FirstName" class="form-control"></InputText>
+            <ValidationMessage For="() => Model.FirstName"></ValidationMessage>
+        </div>
+        <div class="mb-3">
+            <label for="LastName" class="form-label">Last name</label>
+            <InputText id="LastName" @bind-value="Model.LastName" class="form-control"></InputText>
+            <ValidationMessage For="() => Model.LastName"></ValidationMessage>
+        </div>
+        <div class="mb-3">
+            <label for="Email" class="form-label">Email address</label>
+            <InputText type="email" id="Email" @bind-value="Model.Email" class="form-control"></InputText>
+            <ValidationMessage For="() => Model.Email"></ValidationMessage>
+        </div>
+        <div class="mb-3">
+            <label for="OrganizationId" class="form-label">Organization</label>
+            <InputSelect @bind-value="Model.OrganizationId" id="OrganizationId" class="form-control">
+                <option value="">Please select...</option>
+                @foreach (var organization in Organizations)
+                {
+                    <option value="@organization.Id">@organization.Name</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="() => Model.OrganizationId"></ValidationMessage>
+        </div>
+        <a class="btn btn-primary" href="@AppRoutes.People.Index">Back</a>
+        <button type="submit" class="btn btn-primary">Create</button>
+    </EditForm>
+}
+
+@code {
+    private PersonRequest? Model { get; set; }
+    private IList<OrganizationResult> Organizations { get; set; } = new List<OrganizationResult>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Model = new PersonRequest
+            {
+                FirstName = string.Empty,
+                LastName = string.Empty
+            };
+
+        var paging = new Paging { Limit = 1000 };
+        var organizations = await OrganizationSdk.Find(paging);
+        Organizations = organizations;
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task CreatePerson()
+    {
+        if (Model is null)
+        {
+            return;
+        }
+
+        await PersonSdk.Create(Model);
+
+        //If something was wrong, we ignore it for now :)
+
+        NavigationManager.NavigateTo(AppRoutes.People.Index);
+    }
+}
